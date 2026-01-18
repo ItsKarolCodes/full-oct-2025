@@ -1,56 +1,30 @@
-const { v4: uuidv4 } = require('uuid');
-const {readCSV, writeCSV} = require('../csv');
+const mongoose = require('mongoose');
 
-const listClassrooms = () => {
-    return readCSV('classrooms').map(classroom => ({
-        ...classroom,
-        students: classroom.students ? classroom.students.split(";") : []
-    }));
-}
+const classroomSchema = new mongoose.Schema({
+    name: { 
+        type: String, 
+        required: true 
+    },
+    
+    teacher_id: { 
+        type: String,
+        required: false
+    },
 
-const getClassroom = (id) => {
-    const classroom = readCSV("classrooms").find(p => p.id === id)
-    classroom.students = classroom.students ? classroom.students.split(";") : [];
-    return classroom;
-}
+    students: [{ 
+        type: String 
+    }]
+}, { 
+    collection: 'classrooms', 
+    timestamps: true 
+});
 
-const createClassroom = (attrs) => {
-    const { name, teacher_id, students } = attrs;
-    const classrooms = readCSV("classrooms");
-    const newClassroom = {
-        id: uuidv4(),
-        name,
-        teacher_id,
-        students: students.join(";")
-    };
+classroomSchema.set('toJSON', {
+    transform: (document, returnedObject) => {
+        returnedObject.id = returnedObject._id.toString();
+        delete returnedObject._id;
+        delete returnedObject.__v;
+    }
+});
 
-    classrooms.push(newClassroom);
-    writeCSV("classrooms", classrooms);
-    newClassroom.students = newClassroom.students ? newClassroom.students.split(";") : [];
-    return newClassroom;
-}
-
-const updateClassroom = (id, attrs) => {
-    const { name, teacher_id, students } = attrs;
-    let classrooms = readCSV("classrooms");
-    const index = classrooms.findIndex(p => p.id === id);
-
-    classrooms[index] = {
-        ...classrooms[index],
-        name: name || classrooms[index].name,
-        teacher_id: teacher_id || classrooms[index].teacher_id,
-        students: students ? students.join(";") : classrooms[index].students
-    };
-
-    writeCSV("classrooms", classrooms)
-    classrooms[index].students = classrooms[index].students ? classrooms[index].students.split(";") : [];
-    return classrooms[index];
-}
-
-const deleteClassroom = (id) => {
-    let classrooms = readCSV("classrooms");
-    const filteredClassrooms = classrooms.filter(p => p.id !== id);
-    writeCSV("classrooms", filteredClassrooms); 
-}
-
-module.exports = { listClassrooms, getClassroom, createClassroom, updateClassroom, deleteClassroom };
+module.exports = mongoose.model('Classroom', classroomSchema);

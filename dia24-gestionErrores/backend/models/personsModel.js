@@ -1,51 +1,35 @@
-const { v4: uuidv4 } = require('uuid');
-const {readCSV, writeCSV} = require('../csv');
+const mongoose = require('mongoose');
 
-const listPersons = () => {
-    return readCSV('persons');
-}
+// Definimos el esquema
+const personSchema = new mongoose.Schema({
+    name: { 
+        type: String, 
+        required: true 
+    },
+    surname: { 
+        type: String, 
+        required: true 
+    },
+    birthdate: { 
+        type: Date 
+    },
+    isTeacher: { 
+        type: Boolean, 
+        default: false 
+    }
+}, { 
+    
+    collection: 'people',
+    timestamps: true 
+});
 
-const getPerson = (id) => {
-    return readCSV("persons").find(p => p.id === id);
-}
+personSchema.set('toJSON', {
+    transform: (document, returnedObject) => {
+        returnedObject.id = returnedObject._id.toString();
+        delete returnedObject._id;
+        delete returnedObject.__v;
+    }
+});
 
-const createPerson = (attrs) => {
-    const { name, surname, is_teacher, birthdate } = attrs;
-    const persons = readCSV("persons");
-    const newPerson = {
-        id: uuidv4(),
-        name,
-        surname,
-        is_teacher: is_teacher || 'false',
-        birthdate
-    };
 
-    persons.push(newPerson);
-    writeCSV("persons", persons);
-    return newPerson;
-}
-
-const updatePerson = (id, attrs) => {
-    const { name, surname, is_teacher, birthdate } = attrs;
-    let persons = readCSV("persons");
-    const index = persons.findIndex(p => p.id === id);
-
-    persons[index] = {
-        ...persons[index],
-        name: name || persons[index].name,
-        surname: surname || persons[index].surname,
-        is_teacher: is_teacher !== undefined ? is_teacher : persons[index].is_teacher,
-        birthdate: birthdate || persons[index].birthdate
-    };
-
-    writeCSV("persons", persons)
-    return persons[index];
-}
-
-const deletePerson = (id) => {
-    let persons = readCSV("persons");
-    const filteredPersons = persons.filter(p => p.id !== id);
-    writeCSV("persons", filteredPersons); 
-}
-
-module.exports = { listPersons, getPerson, createPerson, updatePerson, deletePerson };
+module.exports = mongoose.model('Person', personSchema);
